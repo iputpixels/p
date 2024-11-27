@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pixel Portfolio</title>
+    <style>
+        /* General styling */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@300&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: 'Roboto Condensed', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #f5f5f5;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            animation: gradientShift 15s ease infinite;
+            background-size: 400% 400%;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Canvas for particles */
+        canvas {
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease;
+        }
+
+        canvas.visible {
+            opacity: 0.7;
+        }
+
+        /* Page transition elements */
+        .page-transition-overlay {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: #1a1a2e;
+            z-index: 1000;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .page-transition-overlay.active {
+            transform: translateX(100%);
+        }
+
+        .content-wrapper {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .content-wrapper.sliding {
+            transform: translateX(100%);
+        }
+
+        /* Content styling */
+        .content {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s ease;
+        }
+
+        .content.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .content h1 {
+            font-size: 4rem;
+            color: #00bfff;
+            margin-bottom: 20px;
+            letter-spacing: 0.2rem;
+            text-shadow: 0 0 20px rgba(0, 191, 255, 0.5);
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all 0.5s ease;
+        }
+
+        .content.visible h1 {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .content p {
+            font-size: 1.4rem;
+            margin: 15px 0;
+            line-height: 1.6;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease 0.3s;
+        }
+
+        .content.visible p {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .buttons {
+            margin-top: 30px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.5s ease 0.6s;
+        }
+
+        .content.visible .buttons {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .buttons a {
+            text-decoration: none;
+            font-size: 1rem;
+            color: #f5f5f5;
+            background: rgba(0, 191, 255, 0.1);
+            border: 1px solid rgba(0, 191, 255, 0.5);
+            padding: 12px 30px;
+            margin: 5px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: inline-block;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .buttons a:before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(0, 191, 255, 0.2);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .buttons a:hover:before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .buttons a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 191, 255, 0.2);
+        }
+
+        .footer {
+            margin-top: 50px;
+            font-size: 0.9rem;
+            color: rgba(255, 255, 255, 0.6);
+            opacity: 0;
+            transition: opacity 0.5s ease 0.9s;
+        }
+
+        .content.visible .footer {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particles"></canvas>
+    <div class="content-wrapper">
+        <div class="content">
+            <h1>P I X E L</h1>
+            <p>
+                Hi! I'm Pixel, and I offer both illustration services and high-quality thumbnail designs. <br>
+                I also share my illustrations on social media!
+            </p>
+            <div class="buttons">
+                <a href="#" onclick="pageTransition.navigate('illustration.html'); return false;">Illustration Page</a>
+                <a href="#" onclick="pageTransition.navigate('thumbnail.html'); return false;">Thumbnail Page</a>
+            </div>
+            <div class="footer">(Made by Me ❤️)</div>
+        </div>
+    </div>
+
+    <script>
+        // Page transition system
+        const pageTransition = {
+            init() {
+                // Add transition overlay
+                const overlay = document.createElement('div');
+                overlay.className = 'page-transition-overlay';
+                document.body.appendChild(overlay);
+            },
+
+            async navigate(url) {
+                const overlay = document.querySelector('.page-transition-overlay');
+                const content = document.querySelector('.content-wrapper');
+
+                // Start transition
+                overlay.classList.add('active');
+                content.classList.add('sliding');
+
+                // Wait for animation
+                await new Promise(resolve => setTimeout(resolve, 600));
+
+                // Navigate to new page
+                window.location.href = url;
+            }
+        };
+
+        // Initialize transition system
+        document.addEventListener('DOMContentLoaded', () => {
+            pageTransition.init();
+        });
+
+        // Initial animations
+        window.addEventListener('load', () => {
+            document.querySelector('canvas').classList.add('visible');
+            document.querySelector('.content').classList.add('visible');
+        });
+
+        // Particle system
+        const canvas = document.getElementById('particles');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const particlesArray = [];
+        const mouse = { x: null, y: null };
+
+        canvas.addEventListener('mousemove', event => {
+            mouse.x = event.x;
+            mouse.y = event.y;
+        });
+
+        canvas.addEventListener('mouseleave', () => {
+            mouse.x = null;
+            mouse.y = null;
+        });
+
+        class Particle {
+            constructor(x, y, size, speedX, speedY) {
+                this.x = x;
+                this.y = y;
+                this.size = size;
+                this.speedX = speedX;
+                this.speedY = speedY;
+                this.alpha = Math.random() * 0.5 + 0.5;
+            }
+
+            draw() {
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 255, 255, ${this.alpha})`;
+                ctx.fill();
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+
+                if (this.x > canvas.width || this.x < 0) this.speedX *= -1;
+                if (this.y > canvas.height || this.y < 0) this.speedY *= -1;
+            }
+        }
+
+        function connectParticles() {
+            for (let i = 0; i < particlesArray.length; i++) {
+                for (let j = i + 1; j < particlesArray.length; j++) {
+                    const dx = particlesArray[i].x - particlesArray[j].x;
+                    const dy = particlesArray[i].y - particlesArray[j].y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance < 100 && mouse.x !== null) {
+                        const mouseDx = particlesArray[i].x - mouse.x;
+                        const mouseDy = particlesArray[i].y - mouse.y;
+                        const mouseDistance = Math.sqrt(mouseDx * mouseDx + mouseDy * mouseDy);
+
+                        if (mouseDistance < 150) {
+                            ctx.beginPath();
+                            ctx.strokeStyle = 'rgba(0, 191, 255, 0.15)';
+                            ctx.lineWidth = 1;
+                            ctx.moveTo(particlesArray[i].x, particlesArray[i].y);
+                            ctx.lineTo(particlesArray[j].x, particlesArray[j].y);
+                            ctx.stroke();
+                        }
+                    }
+                }
+            }
+        }
+
+        function initParticles() {
+            particlesArray.length = 0;
+            const numParticles = 100;
+            for (let i = 0; i < numParticles; i++) {
+                const size = Math.random() * 5 + 1;
+                const x = Math.random() * canvas.width;
+                const y = Math.random() * canvas.height;
+                const speedX = (Math.random() - 0.5) * 2;
+                const speedY = (Math.random() - 0.5) * 2;
+                particlesArray.push(new Particle(x, y, size, speedX, speedY));
+            }
+        }
+
+        function animate() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particlesArray.forEach(particle => {
+                particle.update();
+                particle.draw();
+            });
+            connectParticles();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initParticles();
+        });
+
+        initParticles();
+        animate();
+    </script>
+</body>
+</html>
